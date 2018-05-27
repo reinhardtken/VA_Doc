@@ -1,0 +1,55 @@
+@startuml
+
+interface IPackageManager
+interface IDeviceInfoManager
+interface IAccountManager
+interface IActivityManager
+
+
+package com.lody.virtual.client.ipc {
+  class VAccountManager {
+   IAccountManager mRemote
+  }
+  VAccountManager --> IAccountManager
+
+  class VDeviceManager {
+   IDeviceInfoManager mRemote
+  }
+  VDeviceManager --> IDeviceInfoManager
+
+  class VActivityManager {
+   IActivityManager mRemote
+  }
+  VActivityManager --> IActivityManager
+
+  class VPackageManager {
+   IPackageManager mRemote
+  }
+  VPackageManager --> IPackageManager
+}
+
+package com.lody.virtual.server.pm {
+  class VPackageManagerService {
+  }
+  VPackageManagerService --|> IPackageManager
+}
+
+package com.lody.virtual.server.am {
+  class VActivityManagerService {
+  }
+  VActivityManagerService --|> IActivityManager
+}
+
+
+note "run in X process" as N2
+com.lody.virtual.server.am .. N2
+com.lody.virtual.server.pm .. N2
+note "server 端代码，VA 伪造了一套 framework 层系统 service 的代码，\n他在一个独立的服务中记录管理组件的各种 Recorder，其逻辑其实与系统原生的相近，\n通过 Binder 与 client 端的 ipc 包中的 VXXXXManager 通讯。诸如 AMS(VAMS),PMS(VPMS)。"  as N1
+com.lody.virtual.server.am .. N1
+com.lody.virtual.server.pm .. N1
+
+
+
+
+
+@enduml

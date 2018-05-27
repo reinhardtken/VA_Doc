@@ -1,0 +1,110 @@
+@startuml
+
+interface android.os.IInterface {
+  IBinder asBinder()
+}
+interface java.lang.reflect.InvocationHandler {
+  Object invoke(Object proxy, Method method, Object[] args)
+}
+class java.lang.reflect.Proxy
+
+
+package android.app {
+
+}
+
+abstract class android.app.ActivityManagerNative {
+      {static} IActivityManager +getDefault()
+      {static} final Singleton<IActivityManager> gDefault
+}
+
+class android.app.ActivityThread {
+  {static} volatile IPackageManager sPackageManager
+}
+
+
+
+interface com.lody.virtual.client.interfaces.IInjector {
+  void inject()
+}
+
+package com.lody.virtual.client.hook.base {
+  abstract class MethodProxy
+
+  class HookInvocationHandler
+  HookInvocationHandler ..|> java.lang.reflect.InvocationHandler
+
+
+  class MethodInvocationStub<IInterface> {
+   Map<String, MethodProxy> mInternalMethodProxies
+   IInterface mBaseInterface
+   IInterface mProxyInterface
+  }
+  MethodInvocationStub --> MethodProxy
+  MethodInvocationStub --> HookInvocationHandler
+  MethodInvocationStub --> java.lang.reflect.Proxy
+  MethodInvocationStub --> android.os.IInterface
+
+
+  abstract class MethodInvocationProxy<MethodInvocationStub> {
+    MethodInvocationStub mInvocationStub
+  }
+  MethodInvocationProxy --> MethodInvocationStub
+  MethodInvocationProxy ..|> com.lody.virtual.client.interfaces.IInjector
+}
+
+package com.lody.virtual.client.hook.proxies.pm {
+  class GetServices
+
+  GetServices --|> MethodProxy
+
+  class PackageManagerStub {
+  }
+  PackageManagerStub --|> MethodInvocationProxy
+  PackageManagerStub ..> mirror.android.app.ActivityThread
+
+}
+
+package com.lody.virtual.client.hook.proxies.am {
+  class ActivityManagerStub
+  ActivityManagerStub --|> MethodInvocationProxy
+  ActivityManagerStub ..> mirror.android.app.ActivityManagerNative
+
+  class MethodProxies.StartActivity
+  MethodProxies.StartActivity --|> MethodProxy
+}
+
+package mirror.android.app {
+  class ActivityManagerNative {
+    {static} Class<?> TYPE = ActivityManagerNative.class
+    {static} RefStaticObject<Object> gDefault
+    {static} RefStaticMethod<IInterface> getDefault
+  }
+  ActivityManagerNative ..> android.app.ActivityManagerNative
+
+  class ActivityThread {
+    {static} RefStaticObject<IInterface> sPackageManager
+  }
+  ActivityThread ..> android.app.ActivityThread
+}
+
+
+
+
+
+
+
+
+
+note as N1
+      HookInvocationHandler负责hook，把调用转发到自己的invoke方法
+      HookInvocationHandler是HookInvocationHandler的子类
+      所以可以访问mInternalMethodProxies，拿到对应的MethodProxy实例。
+      比如调用ActivityManagerNative.getDefault().startActivity
+      最终被转发到com.lody.virtual.client.hook.proxies.am.MethodProxies.StartActivity.call
+end note
+
+HookInvocationHandler .. N1
+MethodInvocationStub  .. N1
+
+@enduml
